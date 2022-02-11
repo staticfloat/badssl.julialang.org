@@ -1,0 +1,49 @@
+version: '2.3'
+services:
+    frontend:
+        restart: unless-stopped
+        image: jonasal/nginx-certbot
+        ports:
+            - 80:80/tcp
+            - 443:443/tcp
+        volumes:
+            - ./badssl.julialang.org.conf:/etc/nginx/user_conf.d/badssl.julialang.org.conf
+            - local_certs:/etc/local_certs
+            - nginx_secrets:/etc/letsencrypt
+        environment:
+            - CERTBOT_EMAIL=${CERTBOT_EMAIL}
+        labels:
+            com.centurylinklabs.watchtower.scope: "badssl" 
+        logging:
+            options:
+                max-size: "1M"
+                max-file: "10"
+
+    # A second version of `nginx-certbot` that generates locally-signed certificates
+    local_ca:
+        restart: unless-stopped
+        image: jonasal/nginx-certbot
+        volumes:
+            - ./local-certs.conf:/etc/nginx/user_conf.d/local-certs.conf
+            - local_certs:/etc/letsencrypt/live/
+        environment:
+            - CERTBOT_EMAIL=${CERTBOT_EMAIL}
+            - USE_LOCAL_CA=1
+            - LOCAL_CA_DIR=/etc/letsencrypt/live/local_ca
+        labels:
+            com.centurylinklabs.watchtower.scope: "badssl"
+    
+    # Auto-reload docker containers when their images are updated
+    watchtower:
+        image: containrrr/watchtower
+        restart: unless-stopped
+        volumes:
+            # Mount the docker socket
+            - /var/run/docker.sock:/var/run/docker.sock
+        command: --cleanup --scope badssl
+        labels:
+            com.centurylinklabs.watchtower.scope: "badssl" 
+
+volumes:
+    nginx_secrets:
+    local_certs:
