@@ -8,6 +8,7 @@ services:
             - 443:443/tcp
         volumes:
             - ./badssl.julialang.org.conf:/etc/nginx/user_conf.d/badssl.julialang.org.conf
+            - ./index.html:/usr/share/nginx/html/index.html
             - local_certs:/etc/local_certs
             - nginx_secrets:/etc/letsencrypt
         environment:
